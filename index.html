@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.5, maximum-scale=3.0">
+    <title>Monjasa Vessel Feed</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+        
+        /* Vessel Selection Page */
+        .selection-page {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #7e8ba3 100%);
+            padding: 20px;
+        }
+        
+        .selection-container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 500px;
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .selection-container h1 {
+            color: #1e3c72;
+            margin-bottom: 10px;
+            font-size: 32px;
+            text-align: center;
+        }
+        
+        .selection-container p {
+            color: #666;
+            margin-bottom: 30px;
+            text-align: center;
+            font-size: 16px;
+        }
+        
+        .vessel-select-wrapper {
+            position: relative;
+            margin-bottom: 30px;
+        }
+        
+        .vessel-select-wrapper label {
+            display: block;
+            margin-bottom: 10px;
+            color: #333;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .vessel-select {
+            width: 100%;
+            padding: 15px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23333' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 15px center;
+            padding-right: 40px;
+        }
+        
+        .vessel-select:hover {
+            border-color: #1e3c72;
+        }
+        
+        .vessel-select:focus {
+            outline: none;
+            border-color: #1e3c72;
+            box-shadow: 0 0 0 3px rgba(30, 60, 114, 0.1);
+        }
+        
+        .watch-button {
+            width: 100%;
+            padding: 15px;
+            font-size: 18px;
+            font-weight: 600;
+            color: white;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(30, 60, 114, 0.3);
+        }
+        
+        .watch-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(30, 60, 114, 0.4);
+        }
+        
+        .watch-button:active {
+            transform: translateY(0);
+        }
+        
+        .watch-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        /* Video Player Page */
+        .video-page {
+            display: none;
+            width: 100%;
+            height: 100%;
+            position: relative;
+            background: #000;
+        }
+        
+        .video-page.active {
+            display: block;
+        }
+        
+        .video-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .video-background {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background: #000;
+            display: block;
+        }
+        
+        /* Controls Overlay */
+        .controls-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%);
+            padding: 15px 20px;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: opacity 0.3s;
+        }
+        
+        .vessel-info {
+            color: white;
+        }
+        
+        .vessel-info h2 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+        
+        .vessel-info .status {
+            font-size: 12px;
+            color: #4ade80;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: #4ade80;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .control-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .control-btn {
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+        
+        .control-btn:active {
+            transform: translateY(0);
+        }
+        
+        /* Zoom Controls */
+        .zoom-controls {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 100;
+        }
+        
+        .zoom-btn {
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            color: white;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            user-select: none;
+        }
+        
+        .zoom-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
+        }
+        
+        .zoom-btn:active {
+            transform: scale(0.95);
+        }
+        
+        .zoom-level {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            z-index: 100;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .zoom-level.visible {
+            opacity: 1;
+        }
+        
+        /* Video Status Info */
+        .video-status {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 10px;
+            font-size: 12px;
+            z-index: 100;
+            font-family: monospace;
+        }
+        
+        .video-status .time {
+            font-weight: 600;
+            color: #4ade80;
+        }
+        
+        /* Loading Spinner */
+        .loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 18px;
+            z-index: 200;
+            text-align: center;
+        }
+        
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .selection-container {
+                padding: 30px 20px;
+            }
+            
+            .selection-container h1 {
+                font-size: 24px;
+            }
+            
+            .vessel-info h2 {
+                font-size: 18px;
+            }
+            
+            .control-buttons {
+                flex-direction: column;
+                gap: 5px;
+            }
+            
+            .control-btn {
+                padding: 8px 16px;
+                font-size: 12px;
+            }
+            
+            .zoom-controls {
+                bottom: 80px;
+                right: 10px;
+            }
+            
+            .zoom-btn {
+                width: 40px;
+                height: 40px;
+                font-size: 20px;
+            }
+            
+            .video-status {
+                bottom: 10px;
+                left: 10px;
+                font-size: 10px;
+                padding: 8px 12px;
+            }
+        }
+        
+        /* Tablet */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .vessel-info h2 {
+                font-size: 20px;
+            }
+        }
+        
+        /* Hide controls on inactivity */
+        .video-page.hide-controls .controls-overlay,
+        .video-page.hide-controls .zoom-controls,
+        .video-page.hide-controls .video-status {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .video-page.hide-controls .controls-overlay {
+            pointer-events: auto;
+        }
+        
+        /* Fullscreen mode styles */
+        .video-page.fullscreen-mode .control-btn.back-btn {
+            display: none;
+        }
+        
+        /* iOS fullscreen video styles */
+        video::-webkit-media-controls-fullscreen-button {
+            display: none;
+        }
+        
+        video::-webkit-media-controls {
+            display: none !important;
+        }
+        
+        /* Error message */
+        .error-message {
+            background: #fee;
+            color: #c33;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Vessel Selection Page -->
+    <div id="selectionPage" class="selection-page">
+        <div class="selection-container">
+            <h1>🚢 Monjasa Vessel Feed</h1>
+            <p>Select a vessel to view feed</p>
+            
+            <div class="vessel-select-wrapper">
+                <label for="vesselSelect">Choose Vessel:</label>
+                <select id="vesselSelect" class="vessel-select">
+                    <option value="">-- Loading vessels... --</option>
+                </select>
+            </div>
+            
+            <button id="watchButton" class="watch-button" disabled>
+                Watch Feed
+            </button>
+            
+            <div id="errorMessage" class="error-message" style="display: none;"></div>
+        </div>
+    </div>
+    
+    <!-- Video Player Page -->
+    <div id="videoPage" class="video-page">
+        <div class="video-container">
+            <video id="videoPlayer" class="video-background" autoplay muted loop playsinline>
+                <source src="" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+        </div>
+        
+        <!-- Controls Overlay -->
+        <div class="controls-overlay">
+            <div class="vessel-info">
+                <h2 id="vesselName">Vessel Feed</h2>
+                <div class="status">
+                    <span class="status-dot"></span>
+                    <span>3 Mins Ago</span>
+                </div>
+            </div>
+            <div class="control-buttons">
+                <button class="control-btn" onclick="toggleFullscreen()">⛶ Fullscreen</button>
+                <button class="control-btn back-btn" onclick="goBackToSelection()">← Back</button>
+            </div>
+        </div>
+        
+        <!-- Zoom Controls -->
+        <div class="zoom-controls">
+            <button class="zoom-btn" onclick="zoomIn()">+</button>
+            <button class="zoom-btn" onclick="resetZoom()">⊙</button>
+            <button class="zoom-btn" onclick="zoomOut()">−</button>
+        </div>
+        
+        <div id="zoomLevel" class="zoom-level">Zoom: 100%</div>
+        
+        <!-- Video Status -->
+        <div class="video-status">
+            <div>Video Time:</div>
+            <div class="time" id="videoTime">--:--:--</div>
+        </div>
+        
+        <!-- Loading Indicator -->
+        <div id="loading" class="loading" style="display: none;">
+            <div class="spinner"></div>
+            <div>Loading video...</div>
+        </div>
+    </div>
+
+    <script>
+        // Vessel Configuration - Will be loaded from API
+        let vesselConfig = {};
+        
+        // State Management
+        let currentVessel = null;
+        let lastVideoSource = '';
+        let updateInterval = null;
+        let currentZoom = 1;
+        let hideControlsTimeout = null;
+        
+        // DOM Elements
+        const selectionPage = document.getElementById('selectionPage');
+        const videoPage = document.getElementById('videoPage');
+        const vesselSelect = document.getElementById('vesselSelect');
+        const watchButton = document.getElementById('watchButton');
+        const videoPlayer = document.getElementById('videoPlayer');
+        const vesselNameDisplay = document.getElementById('vesselName');
+        const videoTimeDisplay = document.getElementById('videoTime');
+        const zoomLevelDisplay = document.getElementById('zoomLevel');
+        const loading = document.getElementById('loading');
+        const errorMessage = document.getElementById('errorMessage');
+        
+        // Load vessel configuration from API endpoint
+        async function loadVesselConfig() {
+            try {
+                const response = await fetch('/api/config');
+                
+                if (!response.ok) {
+                    throw new Error('Failed to load vessel configuration');
+                }
+                
+                const config = await response.json();
+                vesselConfig = config.vessels || {};
+                
+                // Populate vessel dropdown
+                populateVesselDropdown();
+                
+                return true;
+            } catch (error) {
+                console.error('Error loading vessel config:', error);
+                showError('Failed to load vessel list. Please refresh the page.');
+                return false;
+            }
+        }
+        
+        // Populate vessel dropdown
+        function populateVesselDropdown() {
+            vesselSelect.innerHTML = '<option value="">-- Select a Vessel --</option>';
+            
+            Object.keys(vesselConfig).forEach(vesselId => {
+                const vessel = vesselConfig[vesselId];
+                const option = document.createElement('option');
+                option.value = vesselId;
+                option.textContent = vessel.name;
+                vesselSelect.appendChild(option);
+            });
+        }
+        
+        // Show error message
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+        }
+        
+        // Initialize app based on URL
+        async function initApp() {
+            // Load configuration first
+            const configLoaded = await loadVesselConfig();
+            
+            if (!configLoaded) {
+                return;
+            }
+            
+            const path = window.location.pathname;
+            const vesselId = path.substring(1); // Remove leading slash
+            
+            if (vesselId && vesselConfig[vesselId]) {
+                // Direct vessel URL
+                currentVessel = vesselId;
+                startWatching(vesselId);
+            } else {
+                // Show selection page
+                selectionPage.style.display = 'flex';
+                videoPage.classList.remove('active');
+            }
+        }
+        
+        // Vessel Selection
+        vesselSelect.addEventListener('change', function() {
+            watchButton.disabled = !this.value;
+        });
+        
+        watchButton.addEventListener('click', function() {
+            const vesselId = vesselSelect.value;
+            if (vesselId) {
+                // Update URL without page reload (only if not in iframe/preview)
+                try {
+                    if (window.self === window.top) {
+                        history.pushState({ vessel: vesselId }, '', `/${vesselId}`);
+                    }
+                } catch (e) {
+                    // In preview mode, just continue without updating URL
+                }
+                startWatching(vesselId);
+            }
+        });
+        
+        // Handle browser back/forward
+        window.addEventListener('popstate', function(event) {
+            if (event.state && event.state.vessel) {
+                startWatching(event.state.vessel);
+            } else {
+                goBackToSelection();
+            }
+        });
+        
+        // Start watching vessel
+        function startWatching(vesselId) {
+            currentVessel = vesselId;
+            const config = vesselConfig[vesselId];
+            
+            if (!config) {
+                alert('Vessel not found!');
+                return;
+            }
+            
+            // Update UI
+            vesselNameDisplay.textContent = config.name;
+            selectionPage.style.display = 'none';
+            videoPage.classList.add('active');
+            
+            // Start video updates
+            updateVideoSource();
+            if (updateInterval) clearInterval(updateInterval);
+            updateInterval = setInterval(updateVideoSource, 60000);
+            
+            // Start time display update
+            setInterval(updateTimeDisplay, 1000);
+            
+            // Setup auto-hide controls
+            setupAutoHideControls();
+        }
+        
+        // Go back to selection
+        function goBackToSelection() {
+            if (updateInterval) clearInterval(updateInterval);
+            currentVessel = null;
+            lastVideoSource = '';
+            videoPlayer.src = '';
+            selectionPage.style.display = 'flex';
+            videoPage.classList.remove('active');
+            try {
+                if (window.self === window.top) {
+                    history.pushState({}, '', '/');
+                }
+            } catch (e) {
+                // In preview mode, just continue without updating URL
+            }
+            resetZoom();
+        }
+        
+        // Video Management
+        async function checkFileExists(url) {
+            try {
+                const response = await fetch(url, { method: 'HEAD' });
+                return response.ok;
+            } catch (error) {
+                console.error('Error checking file existence:', error);
+                return false;
+            }
+        }
+        
+        function getTimestampedFilename(minutesBack) {
+            const now = new Date();
+            now.setUTCMinutes(now.getUTCMinutes() - minutesBack);
+            const year = now.getUTCFullYear();
+            const month = String(now.getUTCMonth() + 1).padStart(2, '0');
+            const day = String(now.getUTCDate()).padStart(2, '0');
+            const hours = String(now.getUTCHours()).padStart(2, '0');
+            const minutes = String(now.getUTCMinutes()).padStart(2, '0');
+            return `${year}-${month}-${day}_${hours}-${minutes}.mp4`;
+        }
+        
+        async function updateVideoSource() {
+            if (!currentVessel) return;
+            
+            const config = vesselConfig[currentVessel];
+            const filename = getTimestampedFilename(3);
+            const url = `${config.storageUrl}/${config.container}/${filename}?${config.sasToken}`;
+            
+            loading.style.display = 'block';
+            const fileExists = await checkFileExists(url);
+            
+            if (fileExists) {
+                lastVideoSource = url;
+            }
+            
+            if (lastVideoSource) {
+                videoPlayer.src = lastVideoSource;
+                videoPlayer.play().catch(err => console.error('Playback error:', err));
+                console.log(`Video source updated: ${filename}`);
+            }
+            
+            loading.style.display = 'none';
+        }
+        
+        function updateTimeDisplay() {
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - 3);
+
+            const h = String(now.getHours()).padStart(2, '0');
+            const m = String(now.getMinutes()).padStart(2, '0');
+            const s = String(now.getSeconds()).padStart(2, '0');
+
+            videoTimeDisplay.textContent = `${h}:${m}:${s}`;
+        }
+        
+        // Video event handlers
+        videoPlayer.addEventListener('ended', function() {
+            this.play();
+        });
+        
+        videoPlayer.addEventListener('loadeddata', function() {
+            loading.style.display = 'none';
+        });
+        
+        // Zoom Controls
+        function zoomIn() {
+            currentZoom = Math.min(currentZoom + 0.25, 3);
+            applyZoom();
+        }
+        
+        function zoomOut() {
+            currentZoom = Math.max(currentZoom - 0.25, 0.5);
+            applyZoom();
+        }
+        
+        function resetZoom() {
+            currentZoom = 1;
+            applyZoom();
+        }
+        
+        function applyZoom() {
+            videoPlayer.style.transform = `scale(${currentZoom})`;
+            showZoomLevel();
+        }
+        
+        function showZoomLevel() {
+            zoomLevelDisplay.textContent = `Zoom: ${Math.round(currentZoom * 100)}%`;
+            zoomLevelDisplay.classList.add('visible');
+            setTimeout(() => {
+                zoomLevelDisplay.classList.remove('visible');
+            }, 1500);
+        }
+        
+        // Fullscreen
+        function toggleFullscreen() {
+            const elem = videoPage;
+            
+            const isFullscreen = document.fullscreenElement || 
+                                document.webkitFullscreenElement || 
+                                document.mozFullScreenElement ||
+                                document.msFullscreenElement;
+            
+            if (!isFullscreen) {
+                if (elem.requestFullscreen) {
+                    elem.requestFullscreen();
+                } else if (elem.webkitRequestFullscreen) {
+                    elem.webkitRequestFullscreen();
+                } else if (elem.webkitEnterFullscreen) {
+                    videoPlayer.webkitEnterFullscreen();
+                } else if (elem.mozRequestFullScreen) {
+                    elem.mozRequestFullScreen();
+                } else if (elem.msRequestFullscreen) {
+                    elem.msRequestFullscreen();
+                }
+                videoPage.classList.add('fullscreen-mode');
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                } else if (document.webkitCancelFullScreen) {
+                    document.webkitCancelFullScreen();
+                } else if (document.mozCancelFullScreen) {
+                    document.mozCancelFullScreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
+                }
+                videoPage.classList.remove('fullscreen-mode');
+            }
+        }
+        
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+        document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+        document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+        
+        function handleFullscreenChange() {
+            const isFullscreen = document.fullscreenElement || 
+                                document.webkitFullscreenElement || 
+                                document.mozFullScreenElement ||
+                                document.msFullscreenElement;
+            
+            if (isFullscreen) {
+                videoPage.classList.add('fullscreen-mode');
+            } else {
+                videoPage.classList.remove('fullscreen-mode');
+            }
+        }
+        
+        // Auto-hide controls
+        function setupAutoHideControls() {
+            videoPage.addEventListener('mousemove', showControls);
+            videoPage.addEventListener('touchstart', showControls);
+        }
+        
+        function showControls() {
+            videoPage.classList.remove('hide-controls');
+            if (hideControlsTimeout) clearTimeout(hideControlsTimeout);
+            hideControlsTimeout = setTimeout(() => {
+                videoPage.classList.add('hide-controls');
+            }, 3000);
+        }
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (!videoPage.classList.contains('active')) return;
+            
+            switch(e.key) {
+                case 'f':
+                case 'F':
+                    toggleFullscreen();
+                    break;
+                case '+':
+                case '=':
+                    zoomIn();
+                    break;
+                case '-':
+                case '_':
+                    zoomOut();
+                    break;
+                case '0':
+                    resetZoom();
+                    break;
+                case 'Escape':
+                    if (document.fullscreenElement) {
+                        document.exitFullscreen();
+                    } else {
+                        goBackToSelection();
+                    }
+                    break;
+            }
+        });
+        
+        // Pinch to zoom on mobile
+        let initialDistance = 0;
+        let initialZoom = 1;
+        
+        videoPage.addEventListener('touchstart', function(e) {
+            if (e.touches.length === 2) {
+                initialDistance = getDistance(e.touches[0], e.touches[1]);
+                initialZoom = currentZoom;
+            }
+        });
+        
+        videoPage.addEventListener('touchmove', function(e) {
+            if (e.touches.length === 2) {
+                e.preventDefault();
+                const currentDistance = getDistance(e.touches[0], e.touches[1]);
+                const scale = currentDistance / initialDistance;
+                currentZoom = Math.min(Math.max(initialZoom * scale, 0.5), 3);
+                applyZoom();
+            }
+        });
+        
+        function getDistance(touch1, touch2) {
+            const dx = touch1.clientX - touch2.clientX;
+            const dy = touch1.clientY - touch2.clientY;
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+        
+        // Initialize app on load
+        window.onload = initApp;
+    </script>
+</body>
+</html>
